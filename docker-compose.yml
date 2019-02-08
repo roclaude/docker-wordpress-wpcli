@@ -1,0 +1,58 @@
+version: '3.1'
+
+services:
+
+  mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+      MYSQL_DATABASE: wordpress_test
+
+  wordpress:
+    image: wordpress
+    ports:
+      - 8888:80
+    environment:
+      WORDPRESS_DB_PASSWORD: example
+      ABSPATH: /usr/src/wordpress/
+    volumes:
+      - wordpress:/var/www/html
+      - ./wordpress:/var/www/html
+    depends_on:
+      - mysql
+
+  cli:
+    image: wordpress:cli
+    user: xfs
+    volumes:
+      - wordpress:/var/www/html
+      - ./wordpress:/var/www/html
+    depends_on:
+      - mysql
+      - wordpress
+    command: >
+      /bin/sh -c '
+      sleep 10;
+      chown -R www-data:www-data /var/www/html/
+      echo "Hello there!";
+      sleep 5;
+      pwd;
+      ls -a;
+      wp core install --path="/var/www/html" --url="http://localhost:8888" --title="Local Wordpress By Docker" --admin_user=admin --admin_password=secret --admin_email=foo@bar.com;
+
+      wp plugin install cookiebot --activate;
+      wp plugin install insert-headers-and-footers --version=1.4.2 --activate;
+      wp plugin install multiple-post-thumbnails --activate;
+      wp plugin install speed-booster-pack --activate;
+      wp plugin install tracking-code-manager --activate;
+
+      wp plugin install estimated-post-reading-time --version=1.4 --activate;
+
+      wp plugin install wp-scss --activate --version=1.2.1;
+
+      #wp theme install twentyseventeen --activate;
+      wp theme activate bridge-child
+      '
+
+volumes:
+  wordpress:
